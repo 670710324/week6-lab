@@ -1,12 +1,24 @@
 CREATE TABLE IF NOT EXISTS movies (
-    id           BIGINT PRIMARY KEY,
-    title        TEXT NOT NULL,
-    title_th     TEXT,
-    release_date DATE,
-    vote_average NUMERIC(4, 2) NOT NULL DEFAULT 0,
-    poster_path  TEXT,
-    popularity   NUMERIC(12, 4) NOT NULL DEFAULT 0
+    id                 BIGINT PRIMARY KEY,
+    title              TEXT NOT NULL,
+    title_th           TEXT,
+    original_title     TEXT NOT NULL DEFAULT '',
+    original_language  TEXT NOT NULL DEFAULT 'en',
+    overview           TEXT,
+    overview_th        TEXT,
+    release_date       DATE,
+    vote_average       NUMERIC(4, 2) NOT NULL DEFAULT 0,
+    poster_path        TEXT,
+    popularity         NUMERIC(12, 4) NOT NULL DEFAULT 0,
+    updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS original_title TEXT NOT NULL DEFAULT '';
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS original_language TEXT NOT NULL DEFAULT 'en';
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS overview TEXT;
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS overview_th TEXT;
+ALTER TABLE movies ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+UPDATE movies SET original_title = title WHERE original_title = '';
 
 CREATE TABLE IF NOT EXISTS genres (
     id      BIGINT PRIMARY KEY,
@@ -27,8 +39,11 @@ CREATE TABLE IF NOT EXISTS members (
     password_hash TEXT NOT NULL,
     display_name  TEXT NOT NULL,
     role          TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('member', 'admin')),
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE members ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE UNIQUE INDEX IF NOT EXISTS members_email_lower_idx ON members (lower(email));
 
@@ -60,3 +75,8 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
 CREATE INDEX IF NOT EXISTS movies_title_lower_idx ON movies (lower(title));
 CREATE INDEX IF NOT EXISTS movies_popularity_idx ON movies (popularity DESC);
 CREATE INDEX IF NOT EXISTS reviews_movie_created_idx ON reviews (movie_id, created_at DESC);
+
+CREATE OR REPLACE VIEW movie_vote_stats AS
+SELECT movie_id, count(*)::BIGINT AS vote_count, avg(score) AS vote_average
+FROM votes
+GROUP BY movie_id;

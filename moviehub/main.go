@@ -48,28 +48,44 @@ func main() {
 		Tickets:   tickets,
 		DummyHash: dummyHash,
 	}
-	login := func(f http.HandlerFunc) http.HandlerFunc {
-		return mw.RequireLogin(tickets, f)
+	login := func(next http.HandlerFunc) http.HandlerFunc {
+		return mw.RequireLogin(tickets, next)
+	}
+	admin := func(next http.HandlerFunc) http.HandlerFunc {
+		return login(mw.RequireRole("admin", next))
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/register", h.Register)
 	mux.HandleFunc("POST /api/auth/login", h.Login)
+	mux.HandleFunc("GET /api/genres", h.Genres)
 	mux.HandleFunc("GET /api/movies", h.SearchMovies)
+	mux.HandleFunc("GET /api/movies/{id}", h.GetMovie)
 	mux.HandleFunc("GET /api/movies/{id}/reviews", h.ListReviews)
 	mux.HandleFunc("GET /api/me", login(h.Me))
 	mux.HandleFunc("POST /api/movies/{id}/reviews", login(h.AddReview))
 	mux.HandleFunc("DELETE /api/reviews/{reviewId}", login(h.DeleteReview))
-	mux.HandleFunc("GET /api/admin/members", login(mw.RequireRole("admin", h.AdminMembers)))
 	mux.HandleFunc("GET /api/me/wishlist", login(h.ListWishlist))
 	mux.HandleFunc("PUT /api/me/wishlist/{movieId}", login(h.PutWishlistItem))
 	mux.HandleFunc("DELETE /api/me/wishlist/{movieId}", login(h.DeleteWishlistItem))
 	mux.HandleFunc("PUT /api/movies/{id}/vote", login(h.PutVote))
 	mux.HandleFunc("DELETE /api/movies/{id}/vote", login(h.DeleteVote))
 
+	mux.HandleFunc("GET /api/admin/stats", admin(h.AdminStats))
+	mux.HandleFunc("GET /api/admin/members", admin(h.AdminMembers))
+	mux.HandleFunc("PUT /api/admin/members/{id}/role", admin(h.AdminSetRole))
+	mux.HandleFunc("GET /api/admin/movies/{id}", admin(h.AdminGetMovie))
+	mux.HandleFunc("POST /api/admin/movies", admin(h.AdminCreateMovie))
+	mux.HandleFunc("PUT /api/admin/movies/{id}", admin(h.AdminUpdateMovie))
+	mux.HandleFunc("DELETE /api/admin/movies/{id}", admin(h.AdminDeleteMovie))
+
 	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	server := &http.Server{
-		Addr:              ":8080",
+		Addr:              ":" + port,
 		Handler:           mw.Logging(mw.CORS(allowedOrigins, mux)),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -77,7 +93,7 @@ func main() {
 	go func() {
 		serverErrors <- server.ListenAndServe()
 	}()
-	log.Println("MovieHub API ฟังอยู่ที่ :8080")
+	log.Println("MovieHub API ฟังอยู่ที่ :" + port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

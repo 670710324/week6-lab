@@ -34,7 +34,8 @@ Use the course-provided 100-movie `seed.sql` instead of `seed.sample.sql` when
 you have that dataset. It is not included in this repository.
 
 Do not commit or regenerate `.jwt_secret` while tickets signed with the existing
-secret are still in use. The API listens on `:8080`.
+secret are still in use. The API listens on `:8080` by default; set `PORT` to
+override it.
 
 ## Routes
 
@@ -42,15 +43,23 @@ secret are still in use. The API listens on `:8080`.
 | --- | --- | --- |
 | POST | `/api/auth/register` | Public |
 | POST | `/api/auth/login` | Public |
+| GET | `/api/genres` | Public |
 | GET | `/api/movies?q=...` | Public |
+| GET | `/api/movies/{id}` | Public |
 | GET | `/api/movies/{id}/reviews` | Public |
 | GET | `/api/me` | Bearer ticket |
 | POST | `/api/movies/{id}/reviews` | Bearer ticket |
 | DELETE | `/api/reviews/{reviewId}` | Owner or admin |
+| GET | `/api/admin/stats` | Admin |
 | GET | `/api/admin/members` | Admin |
+| PUT | `/api/admin/members/{id}/role` | Admin |
+| GET | `/api/admin/movies/{id}` | Admin |
+| POST | `/api/admin/movies` | Admin |
+| PUT | `/api/admin/movies/{id}` | Admin |
+| DELETE | `/api/admin/movies/{id}` | Admin |
 | GET | `/api/me/wishlist` | Bearer ticket |
 | PUT / DELETE | `/api/me/wishlist/{movieId}` | Bearer ticket |
 | PUT / DELETE | `/api/movies/{id}/vote` | Bearer ticket |
 
-Admin roles are assigned out of band in the database; registration always
-creates a `member`.
+Registration always creates a `member`. Bootstrap the first admin out of band
+in the database; admins can then change other members' roles from the backoffice.
