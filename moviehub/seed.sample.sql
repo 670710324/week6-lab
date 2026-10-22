@@ -21,3 +21,15 @@ INSERT INTO movie_genres (movie_id, genre_id, position) VALUES
     (1423191, 27, 0),
     (460458, 28, 0)
 ON CONFLICT (movie_id, genre_id) DO UPDATE SET position = EXCLUDED.position;
+
+-- Demo accounts for local smoke tests. These are intentionally lightweight and
+-- designed to let the API be exercised without needing a full user registration
+-- flow first.
+INSERT INTO members (id, email, password_hash, display_name, role) VALUES
+    (1, 'admin@moviehub.local', '$2a$10$g965i/snXXw2A09SCzCdH.rLNQYEav9S0IQAnaeiS.mBlplPc80hG', 'MovieHub Admin', 'admin'),
+    (2, 'member@moviehub.local', '$2a$10$/YCBolJvm/2CCr6rQ.pK/ehHHwcjz0fKm5rSzq/TXX.nMrRl5UxI6', 'MovieHub Member', 'member')
+ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    display_name = EXCLUDED.display_name,
+    role = EXCLUDED.role;
